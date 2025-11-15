@@ -1,0 +1,65 @@
+flowchart TB
+    %% Notes / endpoint descriptions
+    subgraph Notes["API Endpoint Details"]
+        NoteText["Enrollment:<br/>POST /enroll<br/>GET /enroll/status/{clientId}<br/><br/>
+        Projects:<br/>POST /projects<br/>GET /projects<br/><br/>
+        Secrets:<br/>GET /projects/{id}/secrets<br/>GET /projects/{id}/secret/{key}<br/>POST /projects/{id}/secrets<br/><br/>
+        Audit:<br/>GET /audit/logs"]
+    end
+
+    %% Main layers
+    subgraph Transport["Transport Layer"]
+        EndpointEnroll["Enrollment endpoints"]
+        EndpointProjects["Project endpoints"]
+        EndpointSecrets["Secret endpoints"]
+        EndpointAudit["Audit endpoints"]
+    end
+
+    subgraph AppLayer["SecretSync.Application<br/>(Use-cases / Services)"]
+        EnrollmentService["EnrollmentService"]
+        ProjectService["ProjectService"]
+        SecretService["SecretService"]
+        ClientService["ClientService"]
+    end
+
+    subgraph Core["SecretSync.Core<br/>(Domain Models + Interfaces)"]
+        Models["Domain Models:<br/>Project<br/>Secret<br/>Client<br/>AuditLogEntry"]
+        Interfaces["Interfaces:<br/>IProjectStore<br/>ISecretStore<br/>IClientStore<br/>IAuditStore<br/>IEncryptionProvider"]
+    end
+
+    subgraph Infra["SecretSync.Infrastructure"]
+        ProjectStoreImpl["ProjectStore<br/>(SQLite / LiteDB / InMemory)"]
+        SecretStoreImpl["SecretStore<br/>(SQLite / LiteDB / InMemory)"]
+        ClientStoreImpl["ClientStore<br/>(SQLite / LiteDB / InMemory)"]
+        AuditStoreImpl["AuditStore<br/>(SQLite / LiteDB / InMemory)"]
+        CryptoImpl["Encryption<br/>(Aes)"]
+    end
+
+    DB[("Database / Storage<br/>(SQLite or LiteDB)")]
+
+    %% Layout / positioning
+    Transport --> AppLayer
+    AppLayer --> Core
+    Core --> Infra
+    Infra --> DB
+
+    %% Align Notes to the right
+    Transport --- Notes
+
+    %% Wiring
+    EndpointEnroll --> EnrollmentService
+    EndpointProjects --> ProjectService
+    EndpointSecrets --> SecretService
+    EndpointAudit --> ClientService
+
+    EnrollmentService --> Interfaces
+    ProjectService --> Interfaces
+    SecretService --> Interfaces
+    ClientService --> Interfaces
+
+    Infra --> Interfaces
+    ProjectStoreImpl --> DB
+    SecretStoreImpl --> DB
+    ClientStoreImpl --> DB
+    AuditStoreImpl --> DB
+

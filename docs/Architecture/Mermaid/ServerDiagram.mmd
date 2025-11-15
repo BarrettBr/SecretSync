@@ -1,0 +1,33 @@
+flowchart LR
+    subgraph OwnerHost["Owners Machine"]
+        Server["SecretSync.Server<br/>(ASP.NET Core Web API)"]
+        DB[("Local DB<br/>(SQLite / LiteDB)")]
+        OwnerCli["SecretSync.Cli<br/>(Owner mode)"]
+    end
+
+    subgraph Network["Network"]
+        HTTPS["REST API"]
+    end
+
+    subgraph ClientHost1["Client Machine"]
+        ClientCli["SecretSync.Cli<br/>(Client mode)"]
+        LocalCache["Local config/cache<br/>(~/.secretsync/config.json)"]
+    end
+
+
+    subgraph Monitoring["Logging & Metrics"]
+        Metrics["Metrics Gatherer"]
+        Logs["Log Gathering"]
+    end
+
+    OwnerCli --> Server
+    Server --> DB
+
+    ClientCli --> HTTPS
+    HTTPS --> Server
+
+    ClientCli --> LocalCache
+
+    Metrics --> Server
+    Logs --> Server
+

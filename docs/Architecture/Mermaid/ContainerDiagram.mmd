@@ -1,0 +1,24 @@
+flowchart TB
+    subgraph Clients
+        CLI["SecretSync.Cli<br/>(.NET console app)"]
+        OtherClient["Other language clients<br/>(Node, GoLang, etc.)"]
+    end
+
+    subgraph Server["SecretSync.Server<br/>(ASP.NET Core Web API)"]
+        Transport["Transport Layer<br/>(API endpoints, auth, general routing)"]
+        AppLayer["SecretSync.Application<br/>(Services / use-cases & general workflow)"]
+        Core["SecretSync.Core<br/>(Domain models & interfaces)"]
+        Infra["SecretSync.Infrastructure<br/>(Database & encryption)"]
+    end
+
+    DB[("SQLite / LiteDB<br/>Database / Storage")]
+
+    CLI -->|REST API| Transport
+    OtherClient -->|REST API| Transport
+
+    Transport --> AppLayer
+    AppLayer --> Core
+    AppLayer --> Infra
+    Infra --> Core
+    Infra --> DB
+

@@ -1,0 +1,45 @@
+sequenceDiagram
+    actor ClientUser as Client
+    participant Cli as SecretSync.Cli
+    participant Server as SecretSync.Server (HTTP API)
+    participant SecretSvc as SecretService (Application)
+    participant ProjectStore as IProjectStore
+    participant SecretStore as ISecretStore
+    participant Crypto as IEncryptionProvider
+
+    %% User triggers sync
+    ClientUser->>Cli: secretsync sync --project <id>
+
+    %% CLI loads local state
+    Cli->>Cli: Load localVersion for project
+
+    %% Step 1: ask server for current project version
+    Cli->>Server: GET /projects/{id}/version (Bearer token)
+    Server->>SecretSvc: GetProjectVersion(projectId, clientId)
+    SecretSvc->>ProjectStore: GetAsync(projectId)
+    ProjectStore-->>SecretSvc: Project with Version = serverVersion
+    SecretSvc-->>Server: serverVersion
+    Server-->>Cli: 200 OK { version: serverVersion }
+
+    %% CLI compares versions
+    Cli->>Cli: Compare localVersion vs serverVersion
+
+    opt localVersion < serverVersion
+        %% Step 2: fetch updated secrets
+        Cli->>Server: GET /projects/{id}/secrets?sinceVersion=localVersion
+        Server->>SecretSvc: GetUpdatedSecrets(projectId, sinceVersion, clientId)
+        SecretSvc->>SecretStore: GetAllAsync(projectId)
+        SecretStore-->>SecretSvc: List of encrypted secrets
+
+        loop for each secret
+            SecretSvc->>Crypto: Decrypt(EncryptedValue)
+            Crypto-->>SecretSvc: plaintext
+        end
+
+        SecretSvc-->>Server: { version: serverVersion, secrets: [...] }
+        Server-->>Cli: 200 OK { version, secrets[] }
+        Cli->>Cli: Update local cache and set localVersion = serverVersion
+    end
+
+    Cli-->>ClientUser: Print "Secrets are up to date."
+

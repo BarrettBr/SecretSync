@@ -1,0 +1,21 @@
+flowchart LR
+    Owner["Owner<br/>(Runs server, Approves clients, Manages projects)"]
+    Client["Client User / Developer<br/>(Uses CLI)"]
+
+    CLI_Owner["SecretSync CLI<br/>(Owner)"]
+    CLI_Client["SecretSync CLI<br/>(Client)"]
+
+    Server["SecretSync Server<br/>(REST API)"]
+
+    Git["Git Hosting<br/>(future integration)"]
+    Metrics["Logging/ Metrics<br/>(Prometheus, etc.)"]
+
+    Owner --> CLI_Owner
+    CLI_Owner -->|REST API| Server
+
+    Client --> CLI_Client
+    CLI_Client -->|REST API| Server
+
+    Git -.-> Server
+    Metrics -.-> Server
+

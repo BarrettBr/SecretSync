@@ -1,0 +1,41 @@
+sequenceDiagram
+    %% Actors and components
+    actor ClientUser as Client User
+    participant Cli as SecretSync.Cli (client)
+    participant Server as SecretSync.Server (REST API)
+    participant EnrollmentSvc as EnrollmentService
+    participant ClientStore as IClientStore
+    actor Owner as Owner
+    participant OwnerCli as SecretSync.Cli (owner)
+
+    %% Client enrolls
+    ClientUser->>Cli: secretsync enroll --name "MyLaptop"
+    Cli->>Server: POST /enroll { clientId, name }
+    Server->>EnrollmentSvc: EnrollClient(clientId, name)
+    EnrollmentSvc->>ClientStore: CreateOrGetAsync(clientId, name)
+    ClientStore-->>EnrollmentSvc: Client { Status = Pending }
+    EnrollmentSvc-->>Server: EnrollmentResult { Status = Pending }
+    Server-->>Cli: 200 OK { "status": "Pending" }
+    Cli-->>ClientUser: "Enrollment pending, waiting for approval..."
+
+    %% Owner approves client
+    Owner->>OwnerCli: secretsync owner approve <clientId/name>
+    OwnerCli->>Server: POST /clients/{clientId}/approve
+    Server->>EnrollmentSvc: ApproveClient(clientId)
+    EnrollmentSvc->>ClientStore: GetAsync(clientId)
+    ClientStore-->>EnrollmentSvc: Client { Status = Pending }
+    EnrollmentSvc->>ClientStore: UpdateAsync(Status = Approved, AuthTokenHash = ...)
+    ClientStore-->>EnrollmentSvc: Updated
+    EnrollmentSvc-->>Server: ApproveResult { Status = Approved }
+    Server-->>OwnerCli: 200 OK { "status": "Approved" }
+
+    %% Client polls for status and gets token
+    ClientUser->>Cli: secretsync status
+    Cli->>Server: GET /enroll/status/{clientId}
+    Server->>EnrollmentSvc: GetEnrollmentStatus(clientId)
+    EnrollmentSvc->>ClientStore: GetAsync(clientId)
+    ClientStore-->>EnrollmentSvc: Client { Status = Approved, AuthTokenHash = ... }
+    EnrollmentSvc-->>Server: { Status = Approved, Token = "<client-token>" }
+    Server-->>Cli: 200 OK { "status": "Approved", "token": "<client-token>" }
+    Cli-->>ClientUser: "Client approved, token saved to config. <file_path>"
+
