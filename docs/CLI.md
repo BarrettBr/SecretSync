@@ -26,6 +26,7 @@ dotnet run --project SecretSync.Cli -- <command> [options]
 The CLI supports two main roles:
 
 1. Client machines:
+
    - Enroll with a SecretSync server.
    - Fetch and cache project secrets.
    - Keep local versions in sync with server versions.
@@ -61,7 +62,7 @@ Example config:
 
 ```json
 {
-  "serverUrl": "https://localhost:5001",
+  "serverUrl": "https://localhost:5281",
   "clientId": "e8c255bd-5f63-4b09-8f0b-2ac35f3fbaef",
   "token": "stored-client-token",
   "options": {
@@ -73,6 +74,7 @@ Example config:
 ```
 
 Example versions:
+
 ```json
 "projects": {
   "Netcode": {
@@ -191,11 +193,11 @@ secretsync owner set secret <project> <key> <value>
 
 ## 6. Exit Codes
 
-- `0` success  
-- `1` general error  # Catch all
+- `0` success
+- `1` general error # Catch all
 - `2` validation error # Used when the user themselves inputs the command incorrectly
 - `3` auth error # If Authentication token is invalid
-- `4` not found  # Secret / Project not found and/or HTTP 404 response
+- `4` not found # Secret / Project not found and/or HTTP 404 response
 
 ---
 
